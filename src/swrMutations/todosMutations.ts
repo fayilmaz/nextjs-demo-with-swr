@@ -1,13 +1,13 @@
-import { addNewTodo } from "@/app/api/todosApi";
+import { addNewTodo, removeTodo } from "@/app/api/todosApi";
 import { Todo } from "@/components/TodoList/TodoList";
-import { useStore } from "@/store/todoStore";
+import { useTodosStore } from "@/store/todoStore";
 
-const { setTodos } = useStore.getState();
+const { setTodos } = useTodosStore.getState();
 export const addMutation = async (newTodo: Todo, todos: Todo[]) => {
   const sortedNewTodosArr = [...todos, newTodo].sort(
-    (a: Todo, b: Todo) => Number(b.id) - Number(b.id),
+    (a: Todo, b: Todo) => Number(b.id) - Number(a.id),
   );
-  await setTodos(sortedNewTodosArr);
+  setTodos(sortedNewTodosArr);
   const added = await addNewTodo(newTodo);
   const sortedTodosWithSavedResponse = [...todos, added].sort(
     (a: Todo, b: Todo) => Number(b.id) - Number(a.id),
@@ -31,6 +31,35 @@ export const addTodoMutationOptions = (newTodo: Todo, todos: Todo[]) => {
     populateCache: () => {
       setTodos(sortByDescending([...todos, newTodo]));
       return sortByDescending([...todos, newTodo]);
+    },
+    revalidate: true,
+  };
+};
+
+export const deleteMutation = async (deletedTodo: Todo, todos: Todo[]) => {
+  const todosArrAfterDeletion = sortByDescending(
+    todos.filter((todo) => todo.id !== deletedTodo.id),
+  );
+  setTodos(todosArrAfterDeletion);
+  const removeTodoRes = await removeTodo(deletedTodo);
+  if (removeTodoRes.status === 200) {
+  }
+  return removeTodo;
+};
+
+export const deleteTodoMutationOptions = (deletedTodo: Todo, todos: Todo[]) => {
+  const todosArrAfterDeletion = sortByDescending(
+    todos.filter((todo) => todo.id !== deletedTodo.id),
+  );
+  return {
+    optimisticData: () => {
+      setTodos([...todosArrAfterDeletion]);
+      return [...todosArrAfterDeletion];
+    },
+    rollbackOnError: true,
+    populateCache: () => {
+      setTodos([...todosArrAfterDeletion]);
+      return [...todosArrAfterDeletion];
     },
     revalidate: true,
   };

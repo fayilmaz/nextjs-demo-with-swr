@@ -1,13 +1,16 @@
 "use client";
 import React, { FormEvent, useRef } from "react";
 import TodoCard from "../TodoCard/TodoCard";
-import { useStore } from "../../store/todoStore";
+import { useTodosStore } from "../../store/todoStore";
 import useSWR from "swr";
 import { getTodos, removeTodo, updateTodo } from "@/app/api/todosApi";
 import {
   addMutation as addTodo,
   addTodoMutationOptions,
+  deleteMutation as deleteTodo,
+  deleteTodoMutationOptions,
 } from "@/swrMutations/todosMutations";
+import { FetchingTypeEnums } from "@/enums";
 import toast from "react-hot-toast";
 
 export type Todo = {
@@ -19,30 +22,39 @@ export type Todo = {
 const cacheKey = "/todos";
 
 const TodoList: React.FC = () => {
-  const notificateSuccess = () =>
-    toast.success("Successfully added a new todo!", { duration: 4000 });
+  const notificateSuccess = (message = "") =>
+    toast.success(message ? message : "Success!", {
+      duration: 2000,
+    });
 
-  const notificateError = (err: string) =>
-    toast.error("error on creating todo:\n" + err, { duration: 4000 });
+  const notificateError = (err: Error | "" = "") => {
+    const errorMessage = err ? err.message : "";
+    toast.error(err ? err.message : "Error!", { duration: 2000 });
+  };
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  const { setTodos, todos } = useStore();
+  const { setTodos, todoState } = useTodosStore();
 
-  const { isLoading, error, data, mutate } = useSWR(cacheKey, getTodos, {
-    refreshInterval: 0,
-    revalidate: false,
-    rollbackOnError: true,
-    onSuccess: (data) => {
-      const sortedTodos = data.sort(
-        (a: Todo, b: Todo) => Number(b.id) - Number(a.id),
-      );
-      setTodos(sortedTodos);
+  const { isLoading, error, data, mutate, isValidating } = useSWR(
+    cacheKey,
+    getTodos,
+    {
+      refreshInterval: 0,
+      revalidate: false,
+      rollbackOnError: true,
+      onSuccess: (data) => {
+        const sortedTodos = data.sort(
+          (a: Todo, b: Todo) => Number(b.id) - Number(a.id),
+        );
+        setTodos(sortedTodos);
+      },
     },
-  });
+  );
 
   const handleAddNewTodo = async (e: FormEvent) => {
     const tempId = Date.now();
+    let errorResponse = false;
     e.preventDefault();
     const todoText: string = formRef?.current?.newTodoText?.value;
     const postData: Todo = {
@@ -52,33 +64,43 @@ const TodoList: React.FC = () => {
     };
     try {
       await mutate(
-        addTodo(postData, todos),
-        addTodoMutationOptions(postData, todos),
+        addTodo(postData, todoState.todos),
+        addTodoMutationOptions(postData, todoState.todos),
       );
       notificateSuccess();
-    } catch (err: string | any) {
+    } catch (err: any) {
+      errorResponse = true;
       notificateError(err);
     }
-    if (formRef.current !== null) {
+    if (formRef.current !== null && !errorResponse) {
       formRef.current.newTodoText.value = "";
     }
   };
 
-  const handleRemoveTodo = (id: number): void => {
-    removeTodo(id)
-      .then((res) => {
-        mutate(todos);
-      })
-      .catch((err) => err);
+  const handleRemoveTodo = async (todo: Todo) => {
+    try {
+      await mutate(
+        deleteTodo(todo, todoState.todos),
+        deleteTodoMutationOptions(todo, todoState.todos),
+      );
+      notificateSuccess("Successfully removed todo!");
+    } catch (err: Error | any) {
+      notificateError(err);
+    }
   };
 
   const handleUpdateTodo = (todo: Todo): void => {
     updateTodo(todo)
       .then((res) => {
-        mutate(todos, { optimisticData: true });
+        mutate(todoState.todos, { optimisticData: true });
       })
       .catch((err) => err);
   };
+
+  const isAddButtonDisabled =
+    isLoading ||
+    isValidating ||
+    (todoState.isFetching && todoState.fetchingType === FetchingTypeEnums.Add);
 
   return (
     <div className="p-8">
@@ -89,13 +111,19 @@ const TodoList: React.FC = () => {
             type="text"
             name="newTodoText"
             placeholder="Add a new todo..."
+            disabled={isLoading || isValidating || todoState.isFetching}
             className="input input-bordered w-full max-w-xs mr-2 inline-block"
           />
           <button
             onClick={handleAddNewTodo}
-            className="btn btn-success inline-block"
+            className="btn btn-success inline-block disabled:bg-slate-400"
+            disabled={isAddButtonDisabled}
           >
-            Add
+            {todoState.isFetching ? (
+              <span className="loading loading-spinner text-white"></span>
+            ) : (
+              "Add"
+            )}
           </button>
         </div>
       </form>
@@ -106,7 +134,7 @@ const TodoList: React.FC = () => {
           ) : error ? (
             <div>ERROR: {error}</div>
           ) : (
-            todos?.map((todo: Todo) => (
+            todoState.todos?.map((todo: Todo) => (
               <TodoCard
                 key={todo.id}
                 todo={todo}
