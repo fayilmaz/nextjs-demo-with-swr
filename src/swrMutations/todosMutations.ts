@@ -1,4 +1,4 @@
-import { addNewTodo, removeTodo } from "@/app/api/todosApi";
+import { addNewTodo, deleteTodo, updateTodo } from "@/app/api/todosApi";
 import { Todo } from "@/components/TodoList/TodoList";
 import { useTodosStore } from "@/store/todoStore";
 
@@ -41,10 +41,10 @@ export const deleteMutation = async (deletedTodo: Todo, todos: Todo[]) => {
     todos.filter((todo) => todo.id !== deletedTodo.id),
   );
   setTodos(todosArrAfterDeletion);
-  const removeTodoRes = await removeTodo(deletedTodo);
-  if (removeTodoRes.status === 200) {
+  const deleteTodoRes = await deleteTodo(deletedTodo);
+  if (deleteTodoRes.status === 200) {
   }
-  return removeTodo;
+  return deleteTodoRes;
 };
 
 export const deleteTodoMutationOptions = (deletedTodo: Todo, todos: Todo[]) => {
@@ -60,6 +60,37 @@ export const deleteTodoMutationOptions = (deletedTodo: Todo, todos: Todo[]) => {
     populateCache: () => {
       setTodos([...todosArrAfterDeletion]);
       return [...todosArrAfterDeletion];
+    },
+    revalidate: true,
+  };
+};
+
+export const updateMutation = async (updatedTodo: Todo, todos: Todo[]) => {
+  const todosExceptUpdated = todos.filter((todo) => todo.id !== updatedTodo.id);
+  const todosWithUpdated = sortByDescending([
+    ...todosExceptUpdated,
+    updatedTodo,
+  ]);
+  setTodos(todosWithUpdated);
+  return await updateTodo(updatedTodo);
+};
+
+export const updateTodoMutationOptions = (updatedTodo: Todo, todos: Todo[]) => {
+  const todosExceptUpdated = todos.filter((todo) => todo.id !== updatedTodo.id);
+  const todosWithUpdated = sortByDescending([
+    ...todosExceptUpdated,
+    updatedTodo,
+  ]);
+  setTodos(todosWithUpdated);
+  return {
+    optimisticData: () => {
+      setTodos([...todosWithUpdated]);
+      return [...todosWithUpdated];
+    },
+    rollbackOnError: true,
+    populateCache: () => {
+      setTodos([...todosWithUpdated]);
+      return [...todosWithUpdated];
     },
     revalidate: true,
   };

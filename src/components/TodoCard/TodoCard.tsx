@@ -6,18 +6,18 @@ import { ModeEnums } from "@/enums";
 
 interface TodoCardProps {
   todo: Todo;
-  onRemove: (todo: Todo) => void;
-  onUpdate: (updatedTodo: Todo) => void;
+  handleDelete: (todo: Todo) => void;
+  handleUpdate: (updatedTodo: Todo) => void;
   mutate: () => void;
   deleteButtonDisabled?: boolean;
 }
 
 const TodoCard: React.FC<TodoCardProps> = ({
   todo,
-  onRemove,
-  onUpdate,
+  handleDelete,
+  handleUpdate,
   mutate,
-  deleteButtonDisabled,
+  deleteButtonDisabled = false,
 }) => {
   const [mode, setMode] = useState(ModeEnums.View);
 
@@ -33,7 +33,7 @@ const TodoCard: React.FC<TodoCardProps> = ({
 
   const handleToggleComplete = () => {
     const editedTodo = { ...todo, completed: !todo.completed };
-    updateTodo(editedTodo).then((res) => mutate());
+    handleUpdate(editedTodo);
   };
 
   return (
@@ -56,7 +56,7 @@ const TodoCard: React.FC<TodoCardProps> = ({
         className={`text-black px-6 py-2 ${
           todo.completed ? "line-through" : ""
         }`}
-        onClick={handleEditTodo}
+        // onClick={handleEditTodo}
       >
         {todo.text}
       </span>
@@ -64,17 +64,13 @@ const TodoCard: React.FC<TodoCardProps> = ({
 
       <button
         className="btn btn-primary btn-sm btn-error"
-        onClick={() => onRemove(todo)}
+        onClick={() => handleDelete(todo)}
         disabled={deleteButtonDisabled}
       >
         Delete
       </button>
     </li>
   );
-};
-
-TodoCard.defaultProps = {
-  deleteButtonDisabled: false,
 };
 
 export default TodoCard;

@@ -3,14 +3,16 @@ import React, { FormEvent, useRef } from "react";
 import TodoCard from "../TodoCard/TodoCard";
 import { useTodosStore } from "../../store/todoStore";
 import useSWR from "swr";
-import { getTodos, removeTodo, updateTodo } from "@/app/api/todosApi";
+import { getTodos } from "@/app/api/todosApi";
 import {
   addMutation as addTodo,
   addTodoMutationOptions,
   deleteMutation as deleteTodo,
   deleteTodoMutationOptions,
+  updateMutation as updateTodo,
+  updateTodoMutationOptions,
 } from "@/swrMutations/todosMutations";
-import { FetchingTypeEnums } from "@/enums";
+import { FetchingTypeEnums, ToastMessageContentEnums } from "@/enums";
 import toast from "react-hot-toast";
 
 export type Todo = {
@@ -67,7 +69,7 @@ const TodoList: React.FC = () => {
         addTodo(postData, todoState.todos),
         addTodoMutationOptions(postData, todoState.todos),
       );
-      notificateSuccess();
+      notificateSuccess(ToastMessageContentEnums.AddTodoSuccess);
     } catch (err: any) {
       errorResponse = true;
       notificateError(err);
@@ -77,24 +79,28 @@ const TodoList: React.FC = () => {
     }
   };
 
-  const handleRemoveTodo = async (todo: Todo) => {
+  const handleDeleteTodo = async (todo: Todo) => {
     try {
       await mutate(
         deleteTodo(todo, todoState.todos),
         deleteTodoMutationOptions(todo, todoState.todos),
       );
-      notificateSuccess("Successfully removed todo!");
+      notificateSuccess(ToastMessageContentEnums.DeleteTodoSuccess);
     } catch (err: Error | any) {
       notificateError(err);
     }
   };
 
-  const handleUpdateTodo = (todo: Todo): void => {
-    updateTodo(todo)
-      .then((res) => {
-        mutate(todoState.todos, { optimisticData: true });
-      })
-      .catch((err) => err);
+  const handleUpdateTodo = async (todo: Todo) => {
+    try {
+      await mutate(
+        updateTodo(todo, todoState.todos),
+        updateTodoMutationOptions(todo, todoState.todos),
+      );
+      notificateSuccess(ToastMessageContentEnums.UpdateTodoSuccess);
+    } catch (err: Error | any) {
+      notificateError(err);
+    }
   };
 
   const isAddButtonDisabled =
@@ -138,8 +144,8 @@ const TodoList: React.FC = () => {
               <TodoCard
                 key={todo.id}
                 todo={todo}
-                onRemove={handleRemoveTodo}
-                onUpdate={handleUpdateTodo}
+                handleDelete={handleDeleteTodo}
+                handleUpdate={handleUpdateTodo}
                 mutate={mutate}
               />
             ))

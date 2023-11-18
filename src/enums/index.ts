@@ -13,11 +13,11 @@ export enum FetchingTypeEnums {
   Update = "update",
 }
 
-export enum ErrorMessageContentEnums {
+export enum ToastMessageContentEnums {
   AddTodoSuccess = "Successfully added a new todo!",
   AddTodoError = "An error occured while adding todo!",
   UpdateTodoSuccess = "Successfully updated todo!",
   UpdateTodoError = "An error occured while updating todo!",
-  DeleteTodoSuccess = "Successfully removed todo!",
-  DeleteError = "An error occured while removing todo!",
+  DeleteTodoSuccess = "Successfully deleted todo!",
+  DeleteError = "An error occured while deleting todo!",
 }

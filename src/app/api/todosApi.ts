@@ -2,7 +2,7 @@ import { Todo } from "@/components/TodoList/TodoList";
 import axios from "axios";
 import { useTodosStore } from "../../store/todoStore";
 import {
-  ErrorMessageContentEnums,
+  ToastMessageContentEnums,
   FetchingTypeEnums,
   NodeEnvEnums,
 } from "@/enums";
@@ -37,10 +37,10 @@ export async function setTodos() {
 
 export async function addNewTodo({ text, completed }: Todo) {
   setTodoState({ isFetching: true, fetchingType: FetchingTypeEnums.Add });
-  await delay(2000);
+  await delay(1000);
   if (Math.random() < 0.5) {
     setTodoState({ isFetching: false, fetchingType: null });
-    throw Error(ErrorMessageContentEnums.AddTodoError);
+    throw Error(ToastMessageContentEnums.AddTodoError);
   }
   axiosIstance
     .post(`/todos`, { text, completed })
@@ -57,8 +57,12 @@ export async function addNewTodo({ text, completed }: Todo) {
 export async function updateTodo(todo: Todo) {
   setTodoState({ isFetching: true, fetchingType: FetchingTypeEnums.Update });
   await delay(1000);
+  if (Math.random() < 0.5) {
+    setTodoState({ isFetching: false, fetchingType: null });
+    throw Error(ToastMessageContentEnums.UpdateTodoError);
+  }
   return await axiosIstance
-    .put(`/todos/${todo.id}`, todo)
+    .patch(`/todos/${todo.id}`, { completed: todo.completed })
     .then((res) => {
       setTodoState({ isFetching: false, fetchingType: null });
       return res.data;
@@ -69,19 +73,19 @@ export async function updateTodo(todo: Todo) {
     });
 }
 
-export async function removeTodo(removedTodo: Todo) {
+export async function deleteTodo(deletedTodo: Todo) {
   setTodoState({ isFetching: true, fetchingType: FetchingTypeEnums.Delete });
-  await delay(2000);
+  await delay(1000);
   if (Math.random() < 0.5) {
     setTodoState({ isFetching: false, fetchingType: null });
-    throw Error(ErrorMessageContentEnums.DeleteError);
+    throw Error(ToastMessageContentEnums.DeleteError);
   }
   return await axiosIstance
-    .delete(`/todos/${removedTodo.id}`)
+    .delete(`/todos/${deletedTodo.id}`)
     .then((res) => {
       setTodoState({ isFetching: false, fetchingType: null });
       if (res.statusText === "OK") {
-        return removedTodo;
+        return deletedTodo;
       }
     })
     .catch((err) => {
