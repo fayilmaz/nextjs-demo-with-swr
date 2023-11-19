@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npm run fakedb & NODE_ENV=development next dev",
-    "fakedb": "json-server --watch fakedb.json --port 3004",
+    "fakedb": "json-server --watch fakedb.json --port 3005",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
